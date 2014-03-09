@@ -62,6 +62,17 @@ upon this some more, or that the feature may need to be part of some larger proj
 Having said that, making small changes right away is a great way to learn.
 
 
+Prerequisites
+=============
+
+To make use of these patches you should have Blender building and a development environment setup.
+
+See:
+
+- http://wiki.blender.org/index.php/Dev:Doc/Building_Blender
+- http://wiki.blender.org/index.php/Dev:Doc/New_Developer_Env
+
+
 Usage
 =====
 
