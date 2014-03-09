@@ -75,6 +75,25 @@ If any of the patches fail to apply to the latest Blender version report an issu
 However you can always checkout the version of Blender which the patch was made against.
 
 
+Patches
+=======
+
+Currently this is more of a TODO list.
+
+*Done*
+- none!
+
+*TODO*
+- ``modifier_deform.diff`` simple deformation modifier (moves vertices).
+- ``modifier_generate.diff`` simple modifier which generates new geometry.
+- ``sequencer_type.diff`` define a new sequence strip type.
+- ``texture_type.diff`` define a new texture type.
+- ``cycles_shader_type.diff`` define a new cycles shader type.
+- ``editmesh_tool.diff`` edit-mode mesh tool.
+- ``editcurve_tool.diff`` edit-mode curve tool.
+- ``ui_button_type.diff`` define a new button type.
+
+
 Contributing Back
 =================
 
