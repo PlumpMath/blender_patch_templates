@@ -74,3 +74,12 @@ Each patch is comprised of 2 files, a read-me and a diff which can be applied to
 If any of the patches fail to apply to the latest Blender version report an issue,
 However you can always checkout the version of Blender which the patch was made against.
 
+
+Contributing Back
+=================
+
+If the patch is finished and you think its useful to include in Blender releases, you can submit the patch here.
+
+Blenders developer site: http://developer.blender.org
+Under the **BF Blender** heading, **Submit Code**
+
