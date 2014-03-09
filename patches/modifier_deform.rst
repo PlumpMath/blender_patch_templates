@@ -25,3 +25,12 @@ When updating this patch be sure to replace the following.
 - ``mydeform``
 - ``mmd`` (stands for ``MyDeformModifierData``)
 
+
+Observations
+============
+
+The modifiers icon is defined in multiple places (ideally it would be defined centrally)
+
+There is some opportunity to make this modifier multi-threaded if the vertices can be deformed in any order.
+See shrink-wrap modifier for an example of this.
+
