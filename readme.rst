@@ -42,10 +42,12 @@ There are some things which we would like to avoid:
 Cargo Cult Programming
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Developers applying changes without understanding what they do, the purpose of these patches is so you can quickly
-identify what changes are needed and then extend them for your own use, rather then blindly copying changes and
-expecting it to work because you followed the template, admittedly early on many developers will do their fair share
-of copy-paste from existing code, but we would encourage developers to take care they understand all the changes made.
+*Developers applying changes without understanding what they do.*
+
+The purpose of these patches is so you can quickly identify what changes are needed and
+then extend them for your own use, rather then blindly copying changes and expecting it to work because you followed
+the template, admittedly early on many developers will do their fair share of copy-paste from existing code,
+but we would encourage developers to take care they understand all the changes made.
 
 
 New Features (because we can!)
