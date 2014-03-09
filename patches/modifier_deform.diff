@@ -1,0 +1,365 @@
+commit cc9d23e4df80f1a99529bb0d69ba5d9ce78b0b71
+Author: Campbell Barton <ideasman42@gmail.com>
+Date:   Mon Mar 10 00:02:43 2014 +1100
+
+    This is a simple deform modifier called 'MyDeform'.
+
+diff --git a/release/scripts/startup/bl_ui/properties_data_modifier.py b/release/scripts/startup/bl_ui/properties_data_modifier.py
+index 8e3e289..522df91 100644
+--- a/release/scripts/startup/bl_ui/properties_data_modifier.py
++++ b/release/scripts/startup/bl_ui/properties_data_modifier.py
+@@ -544,6 +544,12 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
+             row.operator("object.multires_external_save", text="Save External...")
+             row.label()
+ 
++    def MY_DEFORM(self, layout, ob, md):
++        col = layout.column()
++        col.prop(md, "strength")
++        col.prop_search(md, "vertex_group", ob, "vertex_groups", text="")
++        col.prop(md, "invert_vertex_group")
++
+     def OCEAN(self, layout, ob, md):
+         if not bpy.app.build_options.mod_oceansim:
+             layout.label("Built without OceanSim modifier")
+diff --git a/source/blender/editors/space_outliner/outliner_draw.c b/source/blender/editors/space_outliner/outliner_draw.c
+index d44a3e6..ca77b9e 100644
+--- a/source/blender/editors/space_outliner/outliner_draw.c
++++ b/source/blender/editors/space_outliner/outliner_draw.c
+@@ -976,6 +976,8 @@ static void tselem_draw_icon(uiBlock *block, int xmax, float x, float y, TreeSto
+ 						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
+ 					case eModifierType_Wireframe:
+ 						UI_icon_draw(x, y, ICON_MOD_WIREFRAME); break;
++					case eModifierType_MyDeform:
++						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
+ 					case eModifierType_LaplacianDeform:
+ 						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
+ 					/* Default */
+diff --git a/source/blender/makesdna/DNA_modifier_types.h b/source/blender/makesdna/DNA_modifier_types.h
+index 7c5846e..efd2290 100644
+--- a/source/blender/makesdna/DNA_modifier_types.h
++++ b/source/blender/makesdna/DNA_modifier_types.h
+@@ -82,6 +82,7 @@ typedef enum ModifierType {
+ 	eModifierType_MeshCache         = 46,
+ 	eModifierType_LaplacianDeform   = 47,
+ 	eModifierType_Wireframe         = 48,
++	eModifierType_MyDeform          = 49,
+ 	NUM_MODIFIER_TYPES
+ } ModifierType;
+ 
+@@ -1362,6 +1363,16 @@ enum {
+ 	MOD_WIREFRAME_CREASE        = (1 << 5),
+ };
+ 
++/* Modifier data stored in the blend file */
++typedef struct MyDeformModifierData {
++	ModifierData modifier;
++	char defgrp_name[64];  /* MAX_VGROUP_NAME */
++	float strength;
++	int flag;  /* options stored here */
++} MyDeformModifierData;
+ 
++enum {
++	MOD_MYDEFORM_INVERT_VGROUP = (1 << 0),
++};
+ 
+ #endif  /* __DNA_MODIFIER_TYPES_H__ */
+diff --git a/source/blender/makesrna/RNA_access.h b/source/blender/makesrna/RNA_access.h
+index ed33098..9380cf5 100644
+--- a/source/blender/makesrna/RNA_access.h
++++ b/source/blender/makesrna/RNA_access.h
+@@ -396,6 +396,7 @@ extern StructRNA RNA_MovieTrackingTrack;
+ extern StructRNA RNA_MulticamSequence;
+ extern StructRNA RNA_MultiresModifier;
+ extern StructRNA RNA_MusgraveTexture;
++extern StructRNA RNA_MyDeformModifier;
+ extern StructRNA RNA_NandController;
+ extern StructRNA RNA_NearSensor;
+ extern StructRNA RNA_NlaStrip;
+diff --git a/source/blender/makesrna/intern/rna_modifier.c b/source/blender/makesrna/intern/rna_modifier.c
+index 11821fb..cdbaf92 100644
+--- a/source/blender/makesrna/intern/rna_modifier.c
++++ b/source/blender/makesrna/intern/rna_modifier.c
+@@ -91,6 +91,7 @@ EnumPropertyItem modifier_type_items[] = {
+ 	{eModifierType_LaplacianDeform, "LAPLACIANDEFORM", ICON_MOD_MESHDEFORM, "Laplacian Deform", ""},
+ 	{eModifierType_Lattice, "LATTICE", ICON_MOD_LATTICE, "Lattice", ""},
+ 	{eModifierType_MeshDeform, "MESH_DEFORM", ICON_MOD_MESHDEFORM, "Mesh Deform", ""},
++	{eModifierType_MyDeform, "MY_DEFORM", ICON_MOD_MESHDEFORM, "My Deform", ""},
+ 	{eModifierType_Shrinkwrap, "SHRINKWRAP", ICON_MOD_SHRINKWRAP, "Shrinkwrap", ""},
+ 	{eModifierType_SimpleDeform, "SIMPLE_DEFORM", ICON_MOD_SIMPLEDEFORM, "Simple Deform", ""},
+ 	{eModifierType_Smooth, "SMOOTH", ICON_MOD_SMOOTH, "Smooth", ""},
+@@ -244,6 +245,8 @@ static StructRNA *rna_Modifier_refine(struct PointerRNA *ptr)
+ 			return &RNA_LaplacianDeformModifier;
+ 		case eModifierType_Wireframe:
+ 			return &RNA_WireframeModifier;
++		case eModifierType_MyDeform:
++			return &RNA_MyDeformModifier;
+ 		/* Default */
+ 		case eModifierType_None:
+ 		case eModifierType_ShapeKey:
+@@ -495,6 +498,12 @@ static void RNA_WireframeModifier_vgroup_set(PointerRNA *ptr, const char *value)
+ 	rna_object_vgroup_name_set(ptr, value, wmd->defgrp_name, sizeof(wmd->defgrp_name));
+ }
+ 
++static void RNA_MyDeformModifier_vgroup_set(PointerRNA *ptr, const char *value)
++{
++	MyDeformModifierData *mmd = (MyDeformModifierData *)ptr->data;
++	rna_object_vgroup_name_set(ptr, value, mmd->defgrp_name, sizeof(mmd->defgrp_name));
++}
++
+ static void rna_WeightVGModifier_mask_uvlayer_set(PointerRNA *ptr, const char *value)
+ {
+ 	ModifierData *md = (ModifierData *)ptr->data;
+@@ -3816,6 +3825,35 @@ static void rna_def_modifier_wireframe(BlenderRNA *brna)
+ 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+ }
+ 
++static void rna_def_modifier_mydeform(BlenderRNA *brna)
++{
++	StructRNA *srna;
++	PropertyRNA *prop;
++
++	srna = RNA_def_struct(brna, "MyDeformModifier", "Modifier");
++	RNA_def_struct_ui_text(srna, "Wireframe Modifier", "Wireframe effect modifier");
++	RNA_def_struct_sdna(srna, "MyDeformModifierData");
++	RNA_def_struct_ui_icon(srna, ICON_MOD_MESHDEFORM);
++
++	prop = RNA_def_property(srna, "strength", PROP_FLOAT, PROP_FACTOR);
++	RNA_def_property_float_sdna(prop, NULL, "strength");
++	RNA_def_property_range(prop, 0.0f, 1.0f);
++	RNA_def_property_ui_range(prop, 0, 1, 0.1, 4);
++	RNA_def_property_ui_text(prop, "Strength", "Some descriptive text");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop = RNA_def_property(srna, "vertex_group", PROP_STRING, PROP_NONE);
++	RNA_def_property_string_sdna(prop, NULL, "defgrp_name");
++	RNA_def_property_ui_text(prop, "Vertex Group", "Vertex group name for selecting the affected areas");
++	RNA_def_property_string_funcs(prop, NULL, NULL, "RNA_MyDeformModifier_vgroup_set");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++
++	prop = RNA_def_property(srna, "invert_vertex_group", PROP_BOOLEAN, PROP_NONE);
++	RNA_def_property_boolean_sdna(prop, NULL, "flag", MOD_MYDEFORM_INVERT_VGROUP);
++	RNA_def_property_ui_text(prop, "Invert", "Invert vertex group influence");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++}
++
+ void RNA_def_modifier(BlenderRNA *brna)
+ {
+ 	StructRNA *srna;
+@@ -3928,6 +3966,7 @@ void RNA_def_modifier(BlenderRNA *brna)
+ 	rna_def_modifier_meshcache(brna);
+ 	rna_def_modifier_laplaciandeform(brna);
+ 	rna_def_modifier_wireframe(brna);
++	rna_def_modifier_mydeform(brna);
+ }
+ 
+ #endif
+diff --git a/source/blender/modifiers/CMakeLists.txt b/source/blender/modifiers/CMakeLists.txt
+index 7b43f98..35aa0fa 100644
+--- a/source/blender/modifiers/CMakeLists.txt
++++ b/source/blender/modifiers/CMakeLists.txt
+@@ -72,6 +72,7 @@ set(SRC
+ 	intern/MOD_meshdeform.c
+ 	intern/MOD_mirror.c
+ 	intern/MOD_multires.c
++	intern/MOD_mydeform.c
+ 	intern/MOD_none.c
+ 	intern/MOD_ocean.c
+ 	intern/MOD_particleinstance.c
+diff --git a/source/blender/modifiers/MOD_modifiertypes.h b/source/blender/modifiers/MOD_modifiertypes.h
+index 9c7c21c..46912ef 100644
+--- a/source/blender/modifiers/MOD_modifiertypes.h
++++ b/source/blender/modifiers/MOD_modifiertypes.h
+@@ -81,6 +81,7 @@ extern ModifierTypeInfo modifierType_UVWarp;
+ extern ModifierTypeInfo modifierType_MeshCache;
+ extern ModifierTypeInfo modifierType_LaplacianDeform;
+ extern ModifierTypeInfo modifierType_Wireframe;
++extern ModifierTypeInfo modifierType_MyDeform;
+ 
+ /* MOD_util.c */
+ void modifier_type_init(ModifierTypeInfo *types[]);
+diff --git a/source/blender/modifiers/intern/MOD_mydeform.c b/source/blender/modifiers/intern/MOD_mydeform.c
+new file mode 100644
+index 0000000..267e466
+--- /dev/null
++++ b/source/blender/modifiers/intern/MOD_mydeform.c
+@@ -0,0 +1,169 @@
++/*
++ * ***** BEGIN GPL LICENSE BLOCK *****
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software  Foundation,
++ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * ***** END GPL LICENSE BLOCK *****
++ *
++ */
++
++/** \file blender/modifiers/intern/MOD_mydeform.c
++ *  \ingroup modifiers
++ */
++
++
++#include "DNA_meshdata_types.h"
++#include "DNA_object_types.h"
++
++#include "BLI_math.h"
++#include "BLI_string.h"
++#include "BLI_utildefines.h"
++
++#include "BKE_cdderivedmesh.h"
++#include "BKE_modifier.h"
++#include "BKE_deform.h"
++
++
++#include "depsgraph_private.h"
++
++#include "MOD_util.h"
++
++/* simple deform modifier */
++static void mydeform_do(MyDeformModifierData *mmd, struct Object *ob, struct DerivedMesh *dm,
++                        float (*vertexCos)[3], int numVerts)
++{
++	int i;
++	int vgroup;
++	MDeformVert *dvert;
++
++	modifier_get_vgroup(ob, dm, mmd->defgrp_name, &dvert, &vgroup);
++
++	for (i = 0; i < numVerts; i++) {
++		float weight = defvert_array_find_weight_safe(dvert, i, vgroup);
++
++		if (mmd->flag & MOD_MYDEFORM_INVERT_VGROUP) {
++			weight = 1.0f - weight;
++		}
++
++		if (weight != 0.0f) {
++			/* simple sphere calculation */
++			float co[3];
++			normalize_v3_v3(co, vertexCos[i]);
++			interp_v3_v3v3(vertexCos[i], vertexCos[i], co, weight * mmd->strength);
++		}
++	}
++}
++
++
++/* MyDeform */
++static void initData(ModifierData *md)
++{
++	MyDeformModifierData *mmd = (MyDeformModifierData *) md;
++
++	mmd->strength = 1.0f;
++}
++
++static void copyData(ModifierData *md, ModifierData *target)
++{
++	/* NOTE: you might want to copy some settings manually (if simple memcpy isn't enough)*/
++#if 0
++	MyDeformModifierData *mmd  = (MyDeformModifierData *)md;
++	MyDeformModifierData *tmmd = (MyDeformModifierData *)target;
++#endif
++	modifier_copyData_generic(md, target);
++}
++
++static CustomDataMask requiredDataMask(Object *UNUSED(ob), ModifierData *md)
++{
++	MyDeformModifierData *mmd = (MyDeformModifierData *)md;
++	CustomDataMask dataMask = 0;
++
++	/* ask for vertexgroups if we need them */
++	if (mmd->defgrp_name[0])
++		dataMask |= CD_MASK_MDEFORMVERT;
++
++	return dataMask;
++}
++
++static void deformVerts(ModifierData *md, Object *ob,
++                        DerivedMesh *derivedData,
++                        float (*vertexCos)[3],
++                        int numVerts,
++                        ModifierApplyFlag UNUSED(flag))
++{
++	DerivedMesh *dm = derivedData;
++	CustomDataMask dataMask = requiredDataMask(ob, md);
++
++	/* we implement requiredDataMask but thats not really useful since
++	 * mesh_calc_modifiers pass a NULL derivedData */
++	if (dataMask)
++		dm = get_dm(ob, NULL, dm, NULL, false, false);
++
++	mydeform_do((MyDeformModifierData *)md, ob, dm, vertexCos, numVerts);
++
++	if (dm != derivedData)
++		dm->release(dm);
++}
++
++static void deformVertsEM(ModifierData *md, Object *ob,
++                          struct BMEditMesh *editData,
++                          DerivedMesh *derivedData,
++                          float (*vertexCos)[3],
++                          int numVerts)
++{
++	DerivedMesh *dm = derivedData;
++	CustomDataMask dataMask = requiredDataMask(ob, md);
++
++	/* we implement requiredDataMask but thats not really useful since
++	 * mesh_calc_modifiers pass a NULL derivedData */
++	if (dataMask)
++		dm = get_dm(ob, editData, dm, NULL, false, false);
++
++	mydeform_do((MyDeformModifierData *)md, ob, dm, vertexCos, numVerts);
++
++	if (dm != derivedData)
++		dm->release(dm);
++}
++
++
++ModifierTypeInfo modifierType_MyDeform = {
++	/* name */              "MyDeform",
++	/* structName */        "MyDeformModifierData",
++	/* structSize */        sizeof(MyDeformModifierData),
++	/* type */              eModifierTypeType_OnlyDeform,
++
++	/* flags */             eModifierTypeFlag_AcceptsMesh |
++	                        eModifierTypeFlag_AcceptsCVs |
++	                        eModifierTypeFlag_SupportsEditmode |
++	                        eModifierTypeFlag_EnableInEditmode,
++
++	/* copyData */          copyData,
++	/* deformVerts */       deformVerts,
++	/* deformMatrices */    NULL,
++	/* deformVertsEM */     deformVertsEM,
++	/* deformMatricesEM */  NULL,
++	/* applyModifier */     NULL,
++	/* applyModifierEM */   NULL,
++	/* initData */          initData,
++	/* requiredDataMask */  requiredDataMask,
++	/* freeData */          NULL,
++	/* isDisabled */        NULL,
++	/* updateDepgraph */    NULL,
++	/* dependsOnTime */     NULL,
++	/* dependsOnNormals */	NULL,
++	/* foreachObjectLink */ NULL,
++	/* foreachIDLink */     NULL,
++	/* foreachTexLink */    NULL,
++};
+diff --git a/source/blender/modifiers/intern/MOD_util.c b/source/blender/modifiers/intern/MOD_util.c
+index 0cc9b8b..62aa828 100644
+--- a/source/blender/modifiers/intern/MOD_util.c
++++ b/source/blender/modifiers/intern/MOD_util.c
+@@ -310,5 +310,6 @@ void modifier_type_init(ModifierTypeInfo *types[])
+ 	INIT_TYPE(MeshCache);
+ 	INIT_TYPE(LaplacianDeform);
+ 	INIT_TYPE(Wireframe);
++	INIT_TYPE(MyDeform);
+ #undef INIT_TYPE
+ }
