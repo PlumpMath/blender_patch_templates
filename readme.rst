@@ -2,33 +2,33 @@
 Blender Patch Templates
 #######################
 
-This repository is to host patches which apply to the Blender ``git.blender.org``, which are good examples
-of how to add functionality.
+This repository is meant to host patches which apply to the Blender ``git.blender.org``, which are good examples of
+how to add functionality.
 
 Motivation
 ==========
 
-Blender is a complex application, some changes may end up needing to touch C, C++, Python and
-build systems (CMake and SCons), this increases the barrier of entry to anyone who is interested to become involved.
+Blender is a complex application, some changes may end up needing to touch C, C++, Python and build systems
+(CMake and SCons). This increases the barrier of entry to anyone who is interested to become involved.
 
-Tutorials can work however you end up copying and pasting from them and when they become out-dated its not always
-clear if the changes are made incorrectly or if the tutorial its self is wrong.
+Tutorials _can_ work, often however you end up copying and pasting from them; when they become outdated,
+it is not always clear if the changes are made incorrectly or if the tutorial itself is wrong.
 
 
 Proposal
 ========
 
-While we can't expect to make this process _easy_ we can at least provide some examples to help developers.
+While we can't expect to make this process _easy_, we can at least provide some examples to help developers.
 
-This repository plans to host multiple patches, each which can be applied on its own and makes some addition to
-Blender which can be used as the basis for further work.
+This repository plans to host multiple patches, each of which can be applied on its own and which makes some addition
+to Blender that can serve as a basis for further work.
 
 
 Goals
 -----
 
 - Help new developers understand Blender's codebase.
-- Patches should be well commented to help in understanding the purpose of changes.
+- Patches should be well commented, to help in understanding the purpose of changes.
 - Patches should be easily manipulated and customized once applied.
 - Patches should be up to date and apply to the latest revision of Blender's git repository.
 
@@ -44,10 +44,11 @@ Cargo Cult Programming
 
 *Developers applying changes without understanding what they do.*
 
-The purpose of these patches is so you can quickly identify what changes are needed and
-then extend them for your own use, rather then blindly copying changes and expecting it to work because you followed
-the template, admittedly early on many developers will do their fair share of copy-paste from existing code,
-but we would encourage developers to take care they understand all the changes made.
+The purpose of these patches is teaching you how to quickly identify what changes are needed and how to extend them'
+for your own use - rather than blindly copying changes and expecting them to work,
+just because you followed the template.
+Admittedly, early on, many developers will do their fair share of copy-paste from existing code,
+but we would encourage developers to take care to understand all the changes made.
 
 
 New Features (because we can!)
@@ -56,8 +57,8 @@ New Features (because we can!)
 Generally the bottleneck with the development is _not_ that we can't add new features fast enough.
 
 New features are of course interesting, but if you spend 5 minutes to edit one of these patches to add a new feature,
-this is a hint that probably any of Blender's existing developers could have added this, and you may need to expand
-upon this some more, or that the feature may need to be part of some larger project.
+this is a hint that probably any of Blender's existing developers could have added this,
+and you may need to expand upon it some more, or that the feature may need to be part of some larger project.
 
 Having said that, making small changes right away is a great way to learn.
 
@@ -65,7 +66,7 @@ Having said that, making small changes right away is a great way to learn.
 Prerequisites
 =============
 
-To make use of these patches you should have Blender building and a development environment setup.
+To make use of these patches, you should have Blender building and a development environment setup.
 
 See:
 
@@ -76,14 +77,14 @@ See:
 Usage
 =====
 
-Each patch is comprised of 2 files, a read-me and a diff which can be applied to Blenders source using. eg.
+Each patch is comprised of 2 files, a read-me and a diff, which can be applied to Blenders source using, eg.
 
 .. code-block::
 
     git apply modifier_deform.diff
 
-If any of the patches fail to apply to the latest Blender version report an issue,
-However you can always checkout the version of Blender which the patch was made against.
+If any of the patches fail to apply to the latest Blender version, please report an issue.
+However, you can always check out the version of Blender which the patch was made against.
 
 
 Patches
@@ -100,7 +101,7 @@ Currently this is more of a TODO list.
 - ``modifier_generate.diff`` simple modifier which generates new geometry.
 - ``sequencer_type.diff`` define a new sequence strip type.
 - ``texture_type.diff`` define a new texture type.
-- ``cycles_shader_node.diff`` define a new cycles shader type.
+- ``cycles_shader_node.diff`` define a new Cycles shader type.
 - ``compositor_node.diff`` define new compositor node.
 - ``editmesh_tool.diff`` edit-mode mesh tool.
 - ``editcurve_tool.diff`` edit-mode curve tool.
@@ -110,8 +111,8 @@ Currently this is more of a TODO list.
 Contributing Back
 =================
 
-If the patch is finished and you think its useful to include in Blender releases, you can submit the patch here.
+If the patch is finished and you believe it to be useful to include in Blender releases, you can submit the patch here.
 
-Blenders developer site: http://developer.blender.org
+Blender's developer site: http://developer.blender.org
 Under the **BF Blender** heading, **Submit Code**
 
