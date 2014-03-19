@@ -1,6 +1,6 @@
-commit cc9d23e4df80f1a99529bb0d69ba5d9ce78b0b71
+commit ec16242eff61a5b7a0d6188f5e710e097fa1288e
 Author: Campbell Barton <ideasman42@gmail.com>
-Date:   Mon Mar 10 00:02:43 2014 +1100
+Date:   Thu Mar 20 00:22:29 2014 +1100
 
     This is a simple deform modifier called 'MyDeform'.
 
@@ -64,7 +64,7 @@ index 7c5846e..efd2290 100644
  
  #endif  /* __DNA_MODIFIER_TYPES_H__ */
 diff --git a/source/blender/makesrna/RNA_access.h b/source/blender/makesrna/RNA_access.h
-index ed33098..9380cf5 100644
+index f385d61..40b3d6e 100644
 --- a/source/blender/makesrna/RNA_access.h
 +++ b/source/blender/makesrna/RNA_access.h
 @@ -396,6 +396,7 @@ extern StructRNA RNA_MovieTrackingTrack;
@@ -76,7 +76,7 @@ index ed33098..9380cf5 100644
  extern StructRNA RNA_NearSensor;
  extern StructRNA RNA_NlaStrip;
 diff --git a/source/blender/makesrna/intern/rna_modifier.c b/source/blender/makesrna/intern/rna_modifier.c
-index 11821fb..cdbaf92 100644
+index 91333af..fe83ae6 100644
 --- a/source/blender/makesrna/intern/rna_modifier.c
 +++ b/source/blender/makesrna/intern/rna_modifier.c
 @@ -91,6 +91,7 @@ EnumPropertyItem modifier_type_items[] = {
@@ -96,20 +96,15 @@ index 11821fb..cdbaf92 100644
  		/* Default */
  		case eModifierType_None:
  		case eModifierType_ShapeKey:
-@@ -495,6 +498,12 @@ static void RNA_WireframeModifier_vgroup_set(PointerRNA *ptr, const char *value)
- 	rna_object_vgroup_name_set(ptr, value, wmd->defgrp_name, sizeof(wmd->defgrp_name));
- }
+@@ -332,6 +335,7 @@ RNA_MOD_VGROUP_NAME_SET(WeightVGMix, mask_defgrp_name);
+ RNA_MOD_VGROUP_NAME_SET(WeightVGProximity, defgrp_name);
+ RNA_MOD_VGROUP_NAME_SET(WeightVGProximity, mask_defgrp_name);
+ RNA_MOD_VGROUP_NAME_SET(Wireframe, defgrp_name);
++RNA_MOD_VGROUP_NAME_SET(MyDeform, defgrp_name);
  
-+static void RNA_MyDeformModifier_vgroup_set(PointerRNA *ptr, const char *value)
-+{
-+	MyDeformModifierData *mmd = (MyDeformModifierData *)ptr->data;
-+	rna_object_vgroup_name_set(ptr, value, mmd->defgrp_name, sizeof(mmd->defgrp_name));
-+}
-+
- static void rna_WeightVGModifier_mask_uvlayer_set(PointerRNA *ptr, const char *value)
+ static void rna_ExplodeModifier_vgroup_get(PointerRNA *ptr, char *value)
  {
- 	ModifierData *md = (ModifierData *)ptr->data;
-@@ -3816,6 +3825,35 @@ static void rna_def_modifier_wireframe(BlenderRNA *brna)
+@@ -3647,6 +3651,35 @@ static void rna_def_modifier_wireframe(BlenderRNA *brna)
  	RNA_def_property_update(prop, 0, "rna_Modifier_update");
  }
  
@@ -133,7 +128,7 @@ index 11821fb..cdbaf92 100644
 +	prop = RNA_def_property(srna, "vertex_group", PROP_STRING, PROP_NONE);
 +	RNA_def_property_string_sdna(prop, NULL, "defgrp_name");
 +	RNA_def_property_ui_text(prop, "Vertex Group", "Vertex group name for selecting the affected areas");
-+	RNA_def_property_string_funcs(prop, NULL, NULL, "RNA_MyDeformModifier_vgroup_set");
++	RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MyDeformModifier_defgrp_name_set");
 +	RNA_def_property_update(prop, 0, "rna_Modifier_update");
 +
 +	prop = RNA_def_property(srna, "invert_vertex_group", PROP_BOOLEAN, PROP_NONE);
@@ -145,7 +140,7 @@ index 11821fb..cdbaf92 100644
  void RNA_def_modifier(BlenderRNA *brna)
  {
  	StructRNA *srna;
-@@ -3928,6 +3966,7 @@ void RNA_def_modifier(BlenderRNA *brna)
+@@ -3759,6 +3792,7 @@ void RNA_def_modifier(BlenderRNA *brna)
  	rna_def_modifier_meshcache(brna);
  	rna_def_modifier_laplaciandeform(brna);
  	rna_def_modifier_wireframe(brna);
@@ -154,7 +149,7 @@ index 11821fb..cdbaf92 100644
  
  #endif
 diff --git a/source/blender/modifiers/CMakeLists.txt b/source/blender/modifiers/CMakeLists.txt
-index 7b43f98..35aa0fa 100644
+index b841356..8a3047a 100644
 --- a/source/blender/modifiers/CMakeLists.txt
 +++ b/source/blender/modifiers/CMakeLists.txt
 @@ -72,6 +72,7 @@ set(SRC
