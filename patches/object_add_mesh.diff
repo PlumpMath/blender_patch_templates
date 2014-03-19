@@ -31,7 +31,7 @@ index b50e084..d800097 100644
 +static BMOpDefine bmo_create_wedge_def = {
 +	"create_wedge",
 +	/* slots_in */
-+	{{"size",            BMO_OP_SLOT_FLT},  /* size of the cube */
++	{{"size",            BMO_OP_SLOT_FLT},  /* size of the wedge */
 +	 {"matrix",          BMO_OP_SLOT_MAT},  /* matrix to multiply the new geometry with */
 +	 {{'\0'}},
 +	},
