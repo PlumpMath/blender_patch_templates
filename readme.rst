@@ -95,6 +95,7 @@ Currently this is more of a TODO list.
 *Done*
 
 - ``modifier_deform.diff`` simple deformation modifier (moves vertices).
+- ``object_add_mesh.diff`` creates a new primitive type (Wedge).
 
 *TODO*
 

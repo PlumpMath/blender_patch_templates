@@ -1,0 +1,220 @@
+commit f12c698c228628a58af7d56c0983698f7cfaf0e6
+Author: Campbell Barton <ideasman42@gmail.com>
+Date:   Thu Mar 20 01:50:04 2014 +1100
+
+    Add a wedge mesh primitive.
+
+diff --git a/release/scripts/startup/bl_ui/space_view3d_toolbar.py b/release/scripts/startup/bl_ui/space_view3d_toolbar.py
+index e39d719..c689db2 100644
+--- a/release/scripts/startup/bl_ui/space_view3d_toolbar.py
++++ b/release/scripts/startup/bl_ui/space_view3d_toolbar.py
+@@ -134,6 +134,7 @@ class VIEW3D_PT_tools_add_object(View3DPanel, Panel):
+             layout.label(text="Primitives:")
+         layout.operator("mesh.primitive_plane_add", text="Plane", icon='MESH_PLANE')
+         layout.operator("mesh.primitive_cube_add", text="Cube", icon='MESH_CUBE')
++        layout.operator("mesh.primitive_wedge_add", text="Wedge", icon='MESH_DATA')  # XXX, no icon
+         layout.operator("mesh.primitive_circle_add", text="Circle", icon='MESH_CIRCLE')
+         layout.operator("mesh.primitive_uv_sphere_add", text="UV Sphere", icon='MESH_UVSPHERE')
+         layout.operator("mesh.primitive_ico_sphere_add", text="Ico Sphere", icon='MESH_ICOSPHERE')
+diff --git a/source/blender/bmesh/intern/bmesh_opdefines.c b/source/blender/bmesh/intern/bmesh_opdefines.c
+index b50e084..d800097 100644
+--- a/source/blender/bmesh/intern/bmesh_opdefines.c
++++ b/source/blender/bmesh/intern/bmesh_opdefines.c
+@@ -1566,6 +1566,26 @@ static BMOpDefine bmo_create_cube_def = {
+ };
+ 
+ /*
++ * Create Wedge
++ *
++ * Creates a wedge.
++ */
++static BMOpDefine bmo_create_wedge_def = {
++	"create_wedge",
++	/* slots_in */
++	{{"size",            BMO_OP_SLOT_FLT},  /* size of the cube */
++	 {"matrix",          BMO_OP_SLOT_MAT},  /* matrix to multiply the new geometry with */
++	 {{'\0'}},
++	},
++	/* slots_out */
++	{{"verts.out", BMO_OP_SLOT_ELEMENT_BUF, {BM_VERT}}, /* output verts */
++	 {{'\0'}},
++	},
++	bmo_create_wedge_exec,
++	BMO_OPTYPE_FLAG_NORMALS_CALC | BMO_OPTYPE_FLAG_SELECT_FLUSH,
++};
++
++/*
+  * Bevel.
+  *
+  * Bevels edges and vertices
+@@ -1838,6 +1858,7 @@ const BMOpDefine *bmo_opdefines[] = {
+ 	&bmo_create_circle_def,
+ 	&bmo_create_cone_def,
+ 	&bmo_create_cube_def,
++	&bmo_create_wedge_def,
+ 	&bmo_create_grid_def,
+ 	&bmo_create_icosphere_def,
+ 	&bmo_create_monkey_def,
+diff --git a/source/blender/bmesh/intern/bmesh_operators_private.h b/source/blender/bmesh/intern/bmesh_operators_private.h
+index 9c1b708..be63055 100644
+--- a/source/blender/bmesh/intern/bmesh_operators_private.h
++++ b/source/blender/bmesh/intern/bmesh_operators_private.h
+@@ -48,6 +48,7 @@ void bmo_convex_hull_exec(BMesh *bm, BMOperator *op);
+ void bmo_create_circle_exec(BMesh *bm, BMOperator *op);
+ void bmo_create_cone_exec(BMesh *bm, BMOperator *op);
+ void bmo_create_cube_exec(BMesh *bm, BMOperator *op);
++void bmo_create_wedge_exec(BMesh *bm, BMOperator *op);
+ void bmo_create_grid_exec(BMesh *bm, BMOperator *op);
+ void bmo_create_icosphere_exec(BMesh *bm, BMOperator *op);
+ void bmo_create_monkey_exec(BMesh *bm, BMOperator *op);
+diff --git a/source/blender/bmesh/operators/bmo_primitive.c b/source/blender/bmesh/operators/bmo_primitive.c
+index f0e31b7..e90e3df 100644
+--- a/source/blender/bmesh/operators/bmo_primitive.c
++++ b/source/blender/bmesh/operators/bmo_primitive.c
+@@ -737,3 +737,66 @@ void bmo_create_cube_exec(BMesh *bm, BMOperator *op)
+ 
+ 	BMO_slot_buffer_from_enabled_flag(bm, op, op->slots_out, "verts.out", BM_VERT, VERT_MARK);
+ }
++
++void bmo_create_wedge_exec(BMesh *bm, BMOperator *op)
++{
++	BMVert *v1, *v2, *v3, *v4, *v5, *v6;
++	float vec[3], mat[4][4], off = BMO_slot_float_get(op->slots_in, "size") / 2.0f;
++
++	BMO_slot_mat4_get(op->slots_in, "matrix", mat);
++
++	if (!off) off = 0.5f;
++
++	vec[0] = off;
++	vec[1] = off;
++	vec[2] = -off;
++	mul_m4_v3(mat, vec);
++	v1 = BM_vert_create(bm, vec, NULL, BM_CREATE_NOP);
++	BMO_elem_flag_enable(bm, v1, VERT_MARK);
++
++	vec[0] = off;
++	vec[1] = -off;
++	vec[2] = -off;
++	mul_m4_v3(mat, vec);
++	v2 = BM_vert_create(bm, vec, NULL, BM_CREATE_NOP);
++	BMO_elem_flag_enable(bm, v2, VERT_MARK);
++
++	vec[0] = -off;
++	vec[1] = -off;
++	vec[2] = off;
++	mul_m4_v3(mat, vec);
++	v3 = BM_vert_create(bm, vec, NULL, BM_CREATE_NOP);
++	BMO_elem_flag_enable(bm, v3, VERT_MARK);
++
++	vec[0] = -off;
++	vec[1] = off;
++	vec[2] = off;
++	mul_m4_v3(mat, vec);
++	v4 = BM_vert_create(bm, vec, NULL, BM_CREATE_NOP);
++	BMO_elem_flag_enable(bm, v4, VERT_MARK);
++
++	vec[0] = off;
++	vec[1] = off;
++	vec[2] = off;
++	mul_m4_v3(mat, vec);
++	v5 = BM_vert_create(bm, vec, NULL, BM_CREATE_NOP);
++	BMO_elem_flag_enable(bm, v5, VERT_MARK);
++
++	vec[0] = off;
++	vec[1] = -off;
++	vec[2] = off;
++	mul_m4_v3(mat, vec);
++	v6 = BM_vert_create(bm, vec, NULL, BM_CREATE_NOP);
++	BMO_elem_flag_enable(bm, v6, VERT_MARK);
++
++	/* the four sides */
++	BM_face_create_quad_tri(bm, v3, v4, v1, v2, NULL, false);
++	BM_face_create_quad_tri(bm, v4, v5, v1, NULL, NULL, false);
++	BM_face_create_quad_tri(bm, v5, v6, v2, v1, NULL, false);
++	BM_face_create_quad_tri(bm, v6, v3, v2, NULL, NULL, false);
++
++	/* top */
++	BM_face_create_quad_tri(bm, v6, v5, v4, v3, NULL, false);
++
++	BMO_slot_buffer_from_enabled_flag(bm, op, op->slots_out, "verts.out", BM_VERT, VERT_MARK);
++}
+diff --git a/source/blender/editors/mesh/editmesh_add.c b/source/blender/editors/mesh/editmesh_add.c
+index a442d54..94d85bf 100644
+--- a/source/blender/editors/mesh/editmesh_add.c
++++ b/source/blender/editors/mesh/editmesh_add.c
+@@ -187,6 +187,51 @@ void MESH_OT_primitive_cube_add(wmOperatorType *ot)
+ 	ED_object_add_generic_props(ot, true);
+ }
+ 
++static int add_primitive_wedge_exec(bContext *C, wmOperator *op)
++{
++	Object *obedit;
++	BMEditMesh *em;
++	float loc[3], rot[3], mat[4][4], dia;
++	bool enter_editmode;
++	bool was_editmode;
++	unsigned int layer;
++
++	WM_operator_view3d_unit_defaults(C, op);
++	ED_object_add_generic_get_opts(C, op, 'Z', loc, rot, &enter_editmode, &layer, NULL);
++	obedit = make_prim_init(C, CTX_DATA_(BLF_I18NCONTEXT_ID_MESH, "Wedge"), &dia, mat, &was_editmode, loc, rot, layer);
++	em = BKE_editmesh_from_object(obedit);
++
++	if (!EDBM_op_call_and_selectf(
++	        em, op, "verts.out", false,
++	        "create_wedge matrix=%m4 size=%f",
++	        mat, RNA_float_get(op->ptr, "radius") * 2.0f))
++	{
++		return OPERATOR_CANCELLED;
++	}
++
++	make_prim_finish(C, obedit, was_editmode, enter_editmode);
++
++	return OPERATOR_FINISHED;
++}
++
++void MESH_OT_primitive_wedge_add(wmOperatorType *ot)
++{
++	/* identifiers */
++	ot->name = "Add Wedge";
++	ot->description = "Construct a wedge mesh";
++	ot->idname = "MESH_OT_primitive_wedge_add";
++
++	/* api callbacks */
++	ot->exec = add_primitive_wedge_exec;
++	ot->poll = ED_operator_scene_editable;
++
++	/* flags */
++	ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
++
++	ED_object_add_unit_props(ot);
++	ED_object_add_generic_props(ot, true);
++}
++
+ static const EnumPropertyItem fill_type_items[] = {
+ 	{0, "NOTHING", 0, "Nothing", "Don't fill at all"},
+ 	{1, "NGON", 0, "Ngon", "Use ngons"},
+diff --git a/source/blender/editors/mesh/mesh_intern.h b/source/blender/editors/mesh/mesh_intern.h
+index 8aea932..911310d 100644
+--- a/source/blender/editors/mesh/mesh_intern.h
++++ b/source/blender/editors/mesh/mesh_intern.h
+@@ -83,6 +83,7 @@ int  EDBM_view3d_poll(struct bContext *C);
+ /* *** editmesh_add.c *** */
+ void MESH_OT_primitive_plane_add(struct wmOperatorType *ot);
+ void MESH_OT_primitive_cube_add(struct wmOperatorType *ot);
++void MESH_OT_primitive_wedge_add(struct wmOperatorType *ot);
+ void MESH_OT_primitive_circle_add(struct wmOperatorType *ot);
+ void MESH_OT_primitive_cylinder_add(struct wmOperatorType *ot);
+ void MESH_OT_primitive_cone_add(struct wmOperatorType *ot);
+diff --git a/source/blender/editors/mesh/mesh_ops.c b/source/blender/editors/mesh/mesh_ops.c
+index 0740370..6528a69 100644
+--- a/source/blender/editors/mesh/mesh_ops.c
++++ b/source/blender/editors/mesh/mesh_ops.c
+@@ -71,6 +71,7 @@ void ED_operatortypes_mesh(void)
+ 	WM_operatortype_append(MESH_OT_edges_select_sharp);
+ 	WM_operatortype_append(MESH_OT_primitive_plane_add);
+ 	WM_operatortype_append(MESH_OT_primitive_cube_add);
++	WM_operatortype_append(MESH_OT_primitive_wedge_add);
+ 	WM_operatortype_append(MESH_OT_primitive_circle_add);
+ 	WM_operatortype_append(MESH_OT_primitive_cylinder_add);
+ 	WM_operatortype_append(MESH_OT_primitive_cone_add);
