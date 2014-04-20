@@ -27,7 +27,7 @@ to Blender that can serve as a basis for further work.
 Goals
 -----
 
-- Help new developers understand Blender's codebase.
+- Help new developers understand Blender's code-base.
 - Patches should be well commented, to help in understanding the purpose of changes.
 - Patches should be easily manipulated and customized once applied.
 - Patches should be up to date and apply to the latest revision of Blender's git repository.
@@ -44,7 +44,7 @@ Cargo Cult Programming
 
 *Developers applying changes without understanding what they do.*
 
-The purpose of these patches is teaching you how to quickly identify what changes are needed and how to extend them'
+The purpose of these patches is teaching you how to quickly identify what changes are needed and how to extend them
 for your own use - rather than blindly copying changes and expecting them to work,
 just because you followed the template.
 Admittedly, early on, many developers will do their fair share of copy-paste from existing code,
@@ -60,7 +60,7 @@ New features are of course interesting, but if you spend 5 minutes to edit one o
 this is a hint that probably any of Blender's existing developers could have added this,
 and you may need to expand upon it some more, or that the feature may need to be part of some larger project.
 
-Having said that, making small changes right away is a great way to learn.
+Having said that, making small changes is a great way to learn.
 
 
 Prerequisites
