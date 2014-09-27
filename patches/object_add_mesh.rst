@@ -4,10 +4,12 @@ Mesh Primitive
 
 This primitive works in a similar way to the mesh cube primitive.
 
+
 Usage
 =====
 
 To use simply add a mesh from the menu and select **Wedge**.
+
 
 Editing
 =======

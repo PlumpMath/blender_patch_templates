@@ -4,10 +4,12 @@ Deform Modifier
 
 This modifier deforms vertices based on a strength slider and a vertex group.
 
+
 Usage
 =====
 
 To use simply add a mesh or curve object, then add a modifier, select **My Deform** from the drop down list.
+
 
 Editing
 =======
