@@ -1,11 +1,11 @@
-commit ec16242eff61a5b7a0d6188f5e710e097fa1288e
+commit 6bb648b4790a76166c3fc2c747d4ac9fefd85fcc
 Author: Campbell Barton <ideasman42@gmail.com>
-Date:   Thu Mar 20 00:22:29 2014 +1100
+Date:   Sat Sep 27 13:50:02 2014 +1000
 
     This is a simple deform modifier called 'MyDeform'.
 
 diff --git a/release/scripts/startup/bl_ui/properties_data_modifier.py b/release/scripts/startup/bl_ui/properties_data_modifier.py
-index 8e3e289..522df91 100644
+index efc430d..ef53031 100644
 --- a/release/scripts/startup/bl_ui/properties_data_modifier.py
 +++ b/release/scripts/startup/bl_ui/properties_data_modifier.py
 @@ -544,6 +544,12 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
@@ -22,10 +22,10 @@ index 8e3e289..522df91 100644
          if not bpy.app.build_options.mod_oceansim:
              layout.label("Built without OceanSim modifier")
 diff --git a/source/blender/editors/space_outliner/outliner_draw.c b/source/blender/editors/space_outliner/outliner_draw.c
-index d44a3e6..ca77b9e 100644
+index 7eb9095..90905f7 100644
 --- a/source/blender/editors/space_outliner/outliner_draw.c
 +++ b/source/blender/editors/space_outliner/outliner_draw.c
-@@ -976,6 +976,8 @@ static void tselem_draw_icon(uiBlock *block, int xmax, float x, float y, TreeSto
+@@ -988,6 +988,8 @@ static void tselem_draw_icon(uiBlock *block, int xmax, float x, float y, TreeSto
  						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
  					case eModifierType_Wireframe:
  						UI_icon_draw(x, y, ICON_MOD_WIREFRAME); break;
@@ -35,7 +35,7 @@ index d44a3e6..ca77b9e 100644
  						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
  					/* Default */
 diff --git a/source/blender/makesdna/DNA_modifier_types.h b/source/blender/makesdna/DNA_modifier_types.h
-index 7c5846e..efd2290 100644
+index 47782bb..fff8732 100644
 --- a/source/blender/makesdna/DNA_modifier_types.h
 +++ b/source/blender/makesdna/DNA_modifier_types.h
 @@ -82,6 +82,7 @@ typedef enum ModifierType {
@@ -46,7 +46,7 @@ index 7c5846e..efd2290 100644
  	NUM_MODIFIER_TYPES
  } ModifierType;
  
-@@ -1362,6 +1363,16 @@ enum {
+@@ -1366,6 +1367,16 @@ enum {
  	MOD_WIREFRAME_CREASE        = (1 << 5),
  };
  
@@ -64,10 +64,10 @@ index 7c5846e..efd2290 100644
  
  #endif  /* __DNA_MODIFIER_TYPES_H__ */
 diff --git a/source/blender/makesrna/RNA_access.h b/source/blender/makesrna/RNA_access.h
-index f385d61..40b3d6e 100644
+index f0582b3..28c6d57 100644
 --- a/source/blender/makesrna/RNA_access.h
 +++ b/source/blender/makesrna/RNA_access.h
-@@ -396,6 +396,7 @@ extern StructRNA RNA_MovieTrackingTrack;
+@@ -399,6 +399,7 @@ extern StructRNA RNA_MovieTrackingTrack;
  extern StructRNA RNA_MulticamSequence;
  extern StructRNA RNA_MultiresModifier;
  extern StructRNA RNA_MusgraveTexture;
@@ -76,7 +76,7 @@ index f385d61..40b3d6e 100644
  extern StructRNA RNA_NearSensor;
  extern StructRNA RNA_NlaStrip;
 diff --git a/source/blender/makesrna/intern/rna_modifier.c b/source/blender/makesrna/intern/rna_modifier.c
-index 91333af..fe83ae6 100644
+index 4911c10..9337f89 100644
 --- a/source/blender/makesrna/intern/rna_modifier.c
 +++ b/source/blender/makesrna/intern/rna_modifier.c
 @@ -91,6 +91,7 @@ EnumPropertyItem modifier_type_items[] = {
@@ -104,7 +104,7 @@ index 91333af..fe83ae6 100644
  
  static void rna_ExplodeModifier_vgroup_get(PointerRNA *ptr, char *value)
  {
-@@ -3647,6 +3651,35 @@ static void rna_def_modifier_wireframe(BlenderRNA *brna)
+@@ -3664,6 +3668,35 @@ static void rna_def_modifier_wireframe(BlenderRNA *brna)
  	RNA_def_property_update(prop, 0, "rna_Modifier_update");
  }
  
@@ -140,7 +140,7 @@ index 91333af..fe83ae6 100644
  void RNA_def_modifier(BlenderRNA *brna)
  {
  	StructRNA *srna;
-@@ -3759,6 +3792,7 @@ void RNA_def_modifier(BlenderRNA *brna)
+@@ -3777,6 +3810,7 @@ void RNA_def_modifier(BlenderRNA *brna)
  	rna_def_modifier_meshcache(brna);
  	rna_def_modifier_laplaciandeform(brna);
  	rna_def_modifier_wireframe(brna);
@@ -149,7 +149,7 @@ index 91333af..fe83ae6 100644
  
  #endif
 diff --git a/source/blender/modifiers/CMakeLists.txt b/source/blender/modifiers/CMakeLists.txt
-index b841356..8a3047a 100644
+index 71c84fd..2e1f0ef 100644
 --- a/source/blender/modifiers/CMakeLists.txt
 +++ b/source/blender/modifiers/CMakeLists.txt
 @@ -72,6 +72,7 @@ set(SRC
@@ -348,10 +348,10 @@ index 0000000..267e466
 +	/* foreachTexLink */    NULL,
 +};
 diff --git a/source/blender/modifiers/intern/MOD_util.c b/source/blender/modifiers/intern/MOD_util.c
-index 0cc9b8b..62aa828 100644
+index 829c2b8..ec661e8 100644
 --- a/source/blender/modifiers/intern/MOD_util.c
 +++ b/source/blender/modifiers/intern/MOD_util.c
-@@ -310,5 +310,6 @@ void modifier_type_init(ModifierTypeInfo *types[])
+@@ -309,5 +309,6 @@ void modifier_type_init(ModifierTypeInfo *types[])
  	INIT_TYPE(MeshCache);
  	INIT_TYPE(LaplacianDeform);
  	INIT_TYPE(Wireframe);
