@@ -1,0 +1,297 @@
+commit e61bb79390a8e8795ceed9436be9c3b6010dc435
+Author: Campbell Barton <ideasman42@gmail.com>
+Date:   Sat Sep 27 16:47:59 2014 +1000
+
+    This is a simple deform modifier called 'MyBMesh'.
+
+diff --git a/release/scripts/startup/bl_ui/properties_data_modifier.py b/release/scripts/startup/bl_ui/properties_data_modifier.py
+index efc430d..5a6b8bd 100644
+--- a/release/scripts/startup/bl_ui/properties_data_modifier.py
++++ b/release/scripts/startup/bl_ui/properties_data_modifier.py
+@@ -544,6 +544,10 @@ class DATA_PT_modifiers(ModifierButtonsPanel, Panel):
+             row.operator("object.multires_external_save", text="Save External...")
+             row.label()
+ 
++    def MY_BMESH(self, layout, ob, md):
++        col = layout.column()
++        col.prop(md, "sides")
++
+     def OCEAN(self, layout, ob, md):
+         if not bpy.app.build_options.mod_oceansim:
+             layout.label("Built without OceanSim modifier")
+diff --git a/source/blender/editors/space_outliner/outliner_draw.c b/source/blender/editors/space_outliner/outliner_draw.c
+index 7eb9095..c237801 100644
+--- a/source/blender/editors/space_outliner/outliner_draw.c
++++ b/source/blender/editors/space_outliner/outliner_draw.c
+@@ -988,6 +988,8 @@ static void tselem_draw_icon(uiBlock *block, int xmax, float x, float y, TreeSto
+ 						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
+ 					case eModifierType_Wireframe:
+ 						UI_icon_draw(x, y, ICON_MOD_WIREFRAME); break;
++					case eModifierType_MyBMesh:
++						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
+ 					case eModifierType_LaplacianDeform:
+ 						UI_icon_draw(x, y, ICON_MOD_MESHDEFORM); break;  /* XXX, needs own icon */
+ 					/* Default */
+diff --git a/source/blender/makesdna/DNA_modifier_types.h b/source/blender/makesdna/DNA_modifier_types.h
+index 47782bb..358a65a 100644
+--- a/source/blender/makesdna/DNA_modifier_types.h
++++ b/source/blender/makesdna/DNA_modifier_types.h
+@@ -82,6 +82,7 @@ typedef enum ModifierType {
+ 	eModifierType_MeshCache         = 46,
+ 	eModifierType_LaplacianDeform   = 47,
+ 	eModifierType_Wireframe         = 48,
++	eModifierType_MyBMesh           = 49,
+ 	NUM_MODIFIER_TYPES
+ } ModifierType;
+ 
+@@ -1366,6 +1367,15 @@ enum {
+ 	MOD_WIREFRAME_CREASE        = (1 << 5),
+ };
+ 
++/* Modifier data stored in the blend file */
++typedef struct MyBMeshModifierData {
++	ModifierData modifier;
++	int sides;
++	int flag;  /* options stored here */
++} MyBMeshModifierData;
+ 
++enum {
++	MOD_MYBMESH_INVERT_VGROUP = (1 << 0),
++};
+ 
+ #endif  /* __DNA_MODIFIER_TYPES_H__ */
+diff --git a/source/blender/makesrna/RNA_access.h b/source/blender/makesrna/RNA_access.h
+index f0582b3..1c8e45e 100644
+--- a/source/blender/makesrna/RNA_access.h
++++ b/source/blender/makesrna/RNA_access.h
+@@ -399,6 +399,7 @@ extern StructRNA RNA_MovieTrackingTrack;
+ extern StructRNA RNA_MulticamSequence;
+ extern StructRNA RNA_MultiresModifier;
+ extern StructRNA RNA_MusgraveTexture;
++extern StructRNA RNA_MyBMeshModifier;
+ extern StructRNA RNA_NandController;
+ extern StructRNA RNA_NearSensor;
+ extern StructRNA RNA_NlaStrip;
+diff --git a/source/blender/makesrna/intern/rna_modifier.c b/source/blender/makesrna/intern/rna_modifier.c
+index 4911c10..6db1934 100644
+--- a/source/blender/makesrna/intern/rna_modifier.c
++++ b/source/blender/makesrna/intern/rna_modifier.c
+@@ -81,6 +81,7 @@ EnumPropertyItem modifier_type_items[] = {
+ 	{eModifierType_Subsurf, "SUBSURF", ICON_MOD_SUBSURF, "Subdivision Surface", ""},
+ 	{eModifierType_Triangulate, "TRIANGULATE", ICON_MOD_TRIANGULATE, "Triangulate", ""},
+ 	{eModifierType_Wireframe, "WIREFRAME", ICON_MOD_WIREFRAME, "Wireframe", "Generate a wireframe on the edges of a mesh"},
++	{eModifierType_MyBMesh, "MY_BMESH", ICON_DOT /* dummy! */, "My BMesh", ""},
+ 	{0, "", 0, N_("Deform"), ""},
+ 	{eModifierType_Armature, "ARMATURE", ICON_MOD_ARMATURE, "Armature", ""},
+ 	{eModifierType_Cast, "CAST", ICON_MOD_CAST, "Cast", ""},
+@@ -244,6 +245,8 @@ static StructRNA *rna_Modifier_refine(struct PointerRNA *ptr)
+ 			return &RNA_LaplacianDeformModifier;
+ 		case eModifierType_Wireframe:
+ 			return &RNA_WireframeModifier;
++		case eModifierType_MyBMesh:
++			return &RNA_MyBMeshModifier;
+ 		/* Default */
+ 		case eModifierType_None:
+ 		case eModifierType_ShapeKey:
+@@ -3664,6 +3667,24 @@ static void rna_def_modifier_wireframe(BlenderRNA *brna)
+ 	RNA_def_property_update(prop, 0, "rna_Modifier_update");
+ }
+ 
++static void rna_def_modifier_mybmesh(BlenderRNA *brna)
++{
++	StructRNA *srna;
++	PropertyRNA *prop;
++
++	srna = RNA_def_struct(brna, "MyBMeshModifier", "Modifier");
++	RNA_def_struct_ui_text(srna, "Wireframe Modifier", "Wireframe effect modifier");
++	RNA_def_struct_sdna(srna, "MyBMeshModifierData");
++	RNA_def_struct_ui_icon(srna, ICON_MOD_MESHDEFORM);
++
++	prop = RNA_def_property(srna, "sides", PROP_INT, PROP_UNSIGNED);
++	RNA_def_property_int_sdna(prop, NULL, "sides");
++	RNA_def_property_range(prop, 3, 10000);
++	RNA_def_property_ui_range(prop, 3, 100, 1, 0);
++	RNA_def_property_ui_text(prop, "Sides", "Remove faces with N sides");
++	RNA_def_property_update(prop, 0, "rna_Modifier_update");
++}
++
+ void RNA_def_modifier(BlenderRNA *brna)
+ {
+ 	StructRNA *srna;
+@@ -3777,6 +3798,7 @@ void RNA_def_modifier(BlenderRNA *brna)
+ 	rna_def_modifier_meshcache(brna);
+ 	rna_def_modifier_laplaciandeform(brna);
+ 	rna_def_modifier_wireframe(brna);
++	rna_def_modifier_mybmesh(brna);
+ }
+ 
+ #endif
+diff --git a/source/blender/modifiers/CMakeLists.txt b/source/blender/modifiers/CMakeLists.txt
+index 71c84fd..2e91302 100644
+--- a/source/blender/modifiers/CMakeLists.txt
++++ b/source/blender/modifiers/CMakeLists.txt
+@@ -72,6 +72,7 @@ set(SRC
+ 	intern/MOD_meshdeform.c
+ 	intern/MOD_mirror.c
+ 	intern/MOD_multires.c
++	intern/MOD_mybmesh.c
+ 	intern/MOD_none.c
+ 	intern/MOD_ocean.c
+ 	intern/MOD_particleinstance.c
+diff --git a/source/blender/modifiers/MOD_modifiertypes.h b/source/blender/modifiers/MOD_modifiertypes.h
+index 9c7c21c..12570c3 100644
+--- a/source/blender/modifiers/MOD_modifiertypes.h
++++ b/source/blender/modifiers/MOD_modifiertypes.h
+@@ -81,6 +81,7 @@ extern ModifierTypeInfo modifierType_UVWarp;
+ extern ModifierTypeInfo modifierType_MeshCache;
+ extern ModifierTypeInfo modifierType_LaplacianDeform;
+ extern ModifierTypeInfo modifierType_Wireframe;
++extern ModifierTypeInfo modifierType_MyBMesh;
+ 
+ /* MOD_util.c */
+ void modifier_type_init(ModifierTypeInfo *types[]);
+diff --git a/source/blender/modifiers/intern/MOD_mybmesh.c b/source/blender/modifiers/intern/MOD_mybmesh.c
+new file mode 100644
+index 0000000..207489b
+--- /dev/null
++++ b/source/blender/modifiers/intern/MOD_mybmesh.c
+@@ -0,0 +1,128 @@
++/*
++ * ***** BEGIN GPL LICENSE BLOCK *****
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software  Foundation,
++ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * ***** END GPL LICENSE BLOCK *****
++ *
++ */
++
++/** \file blender/modifiers/intern/MOD_mybmesh.c
++ *  \ingroup modifiers
++ */
++
++
++#include "DNA_meshdata_types.h"
++#include "DNA_object_types.h"
++
++#include "BLI_math.h"
++#include "BLI_string.h"
++#include "BLI_utildefines.h"
++
++#include "BKE_cdderivedmesh.h"
++#include "BKE_modifier.h"
++#include "BKE_deform.h"
++
++#include "bmesh.h"
++#include "bmesh_tools.h"
++
++#include "MOD_util.h"
++
++/* bmesh only function */
++static void mybmesh_do(BMesh *bm, MyBMeshModifierData *mmd)
++{
++	BMIter iter;
++	BMFace *f, *f_next;
++
++	/* use the mutable iterator so we can remove data as its looped over */
++	BM_ITER_MESH_MUTABLE (f, f_next, &iter, bm, BM_FACES_OF_MESH) {
++		if (f->len == mmd->sides) {
++			BM_face_kill(bm, f);
++		}
++	}
++}
++
++/* MyBMesh */
++static void initData(ModifierData *md)
++{
++	MyBMeshModifierData *mmd = (MyBMeshModifierData *) md;
++
++	mmd->sides = 4;
++}
++
++static void copyData(ModifierData *md, ModifierData *target)
++{
++	/* NOTE: you might want to copy some settings manually (if simple memcpy isn't enough)*/
++#if 0
++	MyBMeshModifierData *mmd  = (MyBMeshModifierData *)md;
++	MyBMeshModifierData *tmmd = (MyBMeshModifierData *)target;
++#endif
++	modifier_copyData_generic(md, target);
++}
++
++static DerivedMesh *applyModifier(ModifierData *md, struct Object *UNUSED(ob),
++                                  DerivedMesh *dm,
++                                  ModifierApplyFlag UNUSED(flag))
++{
++	DerivedMesh *result;
++	BMesh *bm;
++
++	MyBMeshModifierData *mmd = (MyBMeshModifierData *)md;
++
++	bm = DM_to_bmesh(dm, true);
++
++	mybmesh_do(bm, mmd);
++
++	result = CDDM_from_bmesh(bm, true);
++
++	BM_mesh_free(bm);
++
++	result->dirty |= DM_DIRTY_NORMALS;
++
++	return result;
++}
++
++static bool dependsOnNormals(ModifierData *UNUSED(md))
++{
++	return false;
++}
++
++ModifierTypeInfo modifierType_MyBMesh = {
++	/* name */              "MyBMesh",
++	/* structName */        "MyBMeshModifierData",
++	/* structSize */        sizeof(MyBMeshModifierData),
++    /* type */              eModifierTypeType_Constructive,
++	/* flags */             eModifierTypeFlag_AcceptsMesh |
++	                        eModifierTypeFlag_SupportsEditmode |
++	                        eModifierTypeFlag_EnableInEditmode,
++
++	/* copyData */          copyData,
++	/* deformVerts */       NULL,
++	/* deformMatrices */    NULL,
++	/* deformVertsEM */     NULL,
++	/* deformMatricesEM */  NULL,
++	/* applyModifier */     applyModifier,
++	/* applyModifierEM */   NULL,
++	/* initData */          initData,
++	/* requiredDataMask */  NULL,
++	/* freeData */          NULL,
++	/* isDisabled */        NULL,
++	/* updateDepgraph */    NULL,
++	/* dependsOnTime */     NULL,
++	/* dependsOnNormals */  dependsOnNormals,
++	/* foreachObjectLink */ NULL,
++	/* foreachIDLink */     NULL,
++	/* foreachTexLink */    NULL,
++};
+diff --git a/source/blender/modifiers/intern/MOD_util.c b/source/blender/modifiers/intern/MOD_util.c
+index 829c2b8..1deb750 100644
+--- a/source/blender/modifiers/intern/MOD_util.c
++++ b/source/blender/modifiers/intern/MOD_util.c
+@@ -309,5 +309,6 @@ void modifier_type_init(ModifierTypeInfo *types[])
+ 	INIT_TYPE(MeshCache);
+ 	INIT_TYPE(LaplacianDeform);
+ 	INIT_TYPE(Wireframe);
++	INIT_TYPE(MyBMesh);
+ #undef INIT_TYPE
+ }
