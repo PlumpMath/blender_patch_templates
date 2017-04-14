@@ -9,7 +9,7 @@ Motivation
 ==========
 
 Blender is a complex application, some changes may end up needing to touch C, C++, Python and build systems
-(CMake and SCons). This increases the barrier of entry to anyone who is interested to become involved.
+(CMake). This increases the barrier of entry to anyone who is interested to become involved.
 
 Tutorials _can_ work, often however you end up copying and pasting from them; when they become outdated,
 it is not always clear if the changes are made incorrectly or if the tutorial itself is wrong.
@@ -48,7 +48,7 @@ The purpose of these patches is teaching you how to quickly identify what change
 for your own use - rather than blindly copying changes and expecting them to work,
 just because you followed the template.
 Admittedly, early on, many developers will do their fair share of copy-paste from existing code,
-but we would encourage developers to take care to understand all the changes made.
+but we would encourage developers to take the time to understand all necesssary changes.
 
 
 New Features (because we can!)
@@ -56,9 +56,9 @@ New Features (because we can!)
 
 Generally the bottleneck with the development is _not_ that we can't add new features fast enough.
 
-New features are of course interesting, but if you spend 5 minutes to edit one of these patches to add a new feature,
-this is a hint that probably any of Blender's existing developers could have added this,
-and you may need to expand upon it some more, or that the feature may need to be part of some larger project.
+New features are of course interesting, but if you can quickly edit one of these patches to add a new feature,
+this is a hint that probably any of Blender's existing developers could have added this too,
+and you may need to expand upon it some more, or that the feature may need to be part of some larger project if you want to have it accepted back into Blender.
 
 Having said that, making small changes is a great way to learn.
 
@@ -72,6 +72,7 @@ See:
 
 - http://wiki.blender.org/index.php/Dev:Doc/Building_Blender
 - http://wiki.blender.org/index.php/Dev:Doc/New_Developer_Env
+- https://wiki.blender.org/index.php/Dev:Doc/New_Developer_Advice
 
 
 Usage
